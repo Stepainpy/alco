@@ -15,6 +15,7 @@ Common API for allocators:
 ## Table
 
 - [Arena](#arena)
+- [Stack](#stack)
 - [Pool](#pool)
 
 ### Arena
@@ -55,6 +56,82 @@ V                                       V           V
 +---+---+---+---+---+---+---+---+---+---+---+---+---+
 |       i       | s3[0]   s3[1]   s3[2] | free  mem |
 +---+---+---+---+---+---+---+---+---+---+---+---+---+
+```
+
+### Stack
+
+Variable-length allocation with LIFO allocation/free memory.
+
+Allocation:
+Return current value of `head`, add `size` by `head` and paste return pointer equal pointer to allocated memory. When free, subtract size of size type from `head` and assing `head` equal return address.
+
+#### Stack frame:
+```
+|<---------- frame_size ---------->|
+|   allocated memory   |  ret ptr  |
+```
+
+`frame_size` = sizeof pointer + size of allocated block
+
+#### Start state:
+```
+base/head                                           tail
+V                                                   V
++---+---+---+---+---+---+---+---+---+---+---+---+---+
+|                    free memory                    |
++---+---+---+---+---+---+---+---+---+---+---+---+---+
+```
+P.S.: for example use size of pointer equal 1
+
+#### Allocate one `int`:
+``` c
+int* i = (int*)alco_stack_alloc(/* pointer to stack object */, sizeof *i);
+```
+```
+base                head                            tail
+V                   V                               V
++---+---+---+---+---+---+---+---+---+---+---+---+---+
+|       i       | R |          free memory          |
++---+---+---+---+---+---+---+---+---+---+---+---+---+
+^                 |
+'-----------------'
+```
+
+#### Allocate three `char`:
+``` c
+char* chs = (char*)alco_stack_alloc(/* pointer to stack object */, sizeof *chs * 3);
+```
+```
+base                                head            tail
+V                                   V               V
++---+---+---+---+---+---+---+---+---+---+---+---+---+
+|       i       | R |    chs    | R |  free memory  |
++---+---+---+---+---+---+---+---+---+---+---+---+---+
+^                 | ^             |
+'-----------------' '-------------'
+```
+
+#### Free `chs`:
+``` c
+alco_stack_free(/* pointer to stack object */);
+```
+```
+base                            head <<<            tail
+V                               V                   V
++---+---+---+---+---+---+---+---+---+---+---+---+---+
+|       i       | R |    chs    | R |  free memory  |
++---+---+---+---+---+---+---+---+---+---+---+---+---+
+^                 | ^             |
+'-----------------' '-------------'
+```
+```
+base                head                            tail
+V                   V                               V
++---+---+---+---+---+---+---+---+---+---+---+---+---+
+|       i       | R |          free memory          |
++---+---+---+---+---+---+---+---+---+---+---+---+---+
+^                 |
+'-----------------'
 ```
 
 ### Pool
